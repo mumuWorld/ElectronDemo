@@ -1,4 +1,5 @@
 import React from 'react'
+import Gallery from './d1/test';
 
 function MyButton() {
   return (
@@ -14,6 +15,25 @@ export default function MyApp() {
       <h1>Welcome to my app</h1>
       <MyButton />
       <Profile />
+      <Gallery />
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Alice</td>
+            <td>30</td>
+          </tr>
+          <tr>
+            <td>Bob</td>
+            <td>25</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

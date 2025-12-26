@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Electron + React + Vite project setup\n\nSet up a complete Electron desktop application with React and Vite:\n- Configured Vite for Electron main, renderer, and preload processes\n- Integrated React with TypeScript support\n- Added Electron Forge with Vite plugin\n- Created sample React components (MyButton, Profile)\n- Included comprehensive README documentation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(pkill:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
