@@ -1,9 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Space, Typography, List, Modal, Form, Input, message } from 'antd'
-import { PlusOutlined, EyeOutlined } from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Space,
+  Typography,
+  List,
+  Modal,
+  Form,
+  Input,
+  message,
+  Layout,
+  Badge,
+  Dropdown
+} from 'antd'
+import type { MenuProps } from 'antd'
+import { PlusOutlined, EyeOutlined, BookOutlined, ReadOutlined, DeleteOutlined } from '@ant-design/icons'
 
 const { Title, Text } = Typography
+const { Header, Content } = Layout
 
 function VocabularyList(): JSX.Element {
   const navigate = useNavigate()
@@ -51,14 +66,52 @@ function VocabularyList(): JSX.Element {
   }
 
   const handleDelete = async (id: number) => {
-    try {
-      await window.api.vocabulary.delete(id)
-      message.success('Vocabulary deleted successfully!')
-      loadVocabularies()
-    } catch (error) {
-      console.error('Failed to delete vocabulary:', error)
-      message.error('Failed to delete vocabulary')
-    }
+    const vocab = vocabularies.find(v => v.id === id)
+    Modal.confirm({
+      title: '确认删除',
+      content: `确定要删除单词本 "${vocab?.name}" 吗？此操作将删除该单词本及其所有单词，且无法撤销。`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await window.api.vocabulary.delete(id)
+          message.success('单词本删除成功！')
+          loadVocabularies()
+        } catch (error) {
+          console.error('Failed to delete vocabulary:', error)
+          message.error('删除单词本失败')
+        }
+      }
+    })
+  }
+
+  const getVocabContextMenuItems = (vocab: any): MenuProps['items'] => {
+    return [
+      {
+        key: 'study',
+        icon: <ReadOutlined />,
+        label: '开始学习',
+        onClick: () => navigate(`/vocabulary/${vocab.id}/study`),
+        disabled: !vocab.wordCount || vocab.wordCount === 0
+      },
+      {
+        key: 'view',
+        icon: <EyeOutlined />,
+        label: '查看单词',
+        onClick: () => navigate(`/vocabulary/${vocab.id}/words`)
+      },
+      {
+        type: 'divider'
+      },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+        danger: true,
+        onClick: () => handleDelete(vocab.id)
+      }
+    ]
   }
 
   useEffect(() => {
@@ -66,81 +119,112 @@ function VocabularyList(): JSX.Element {
   }, [])
 
   return (
-    <div style={{ padding: 24 }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Title level={2}>Vocabulary Learning System</Title>
-        <Title level={3}>背单词系统 - electron-vite 版本</Title>
+    <Layout style={{ minHeight: '100vh', maxHeight: '100vh', overflow: 'hidden' }}>
+      <Header
+        style={{
+          background: '#fff',
+          padding: '0 24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: 64,
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BookOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+          <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
+            背单词系统
+          </Title>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)} size="large">
+          创建单词本
+        </Button>
+      </Header>
 
-        <Card title="IPC Communication Test">
-          <Space direction="vertical">
-            <Button type="primary" onClick={handlePing} loading={loading}>
-              Test Ping
-            </Button>
-            {pingResult && <Text>{pingResult}</Text>}
-          </Space>
-        </Card>
+      <Content style={{ padding: 24, background: '#f5f5f5', overflow: 'auto', flex: 1 }}>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Card>
+            <Space direction="vertical" size={4}>
+              <Title level={4} style={{ margin: 0 }}>我的单词本</Title>
+              <Text type="secondary">共 {vocabularies.length} 个单词本</Text>
+            </Space>
+          </Card>
 
-        <Card
-          title="Vocabulary Management"
-          extra={
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-              Create Vocabulary
-            </Button>
-          }
-        >
           <List
+            grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
             dataSource={vocabularies}
             renderItem={(vocab) => (
-              <List.Item
-                key={vocab.id}
-                actions={[
-                  <Button
-                    key="view"
-                    type="link"
-                    icon={<EyeOutlined />}
+              <List.Item>
+                <Dropdown
+                  menu={{ items: getVocabContextMenuItems(vocab) }}
+                  trigger={['contextMenu']}
+                >
+                  <Card
+                    hoverable
                     onClick={() => navigate(`/vocabulary/${vocab.id}/words`)}
-                  >
-                    View Words
-                  </Button>,
-                  <Button key="delete" type="link" danger onClick={() => handleDelete(vocab.id)}>
-                    Delete
-                  </Button>
-                ]}
-              >
-                <List.Item.Meta
-                  title={vocab.name}
-                  description={
-                    <Space direction="vertical" size="small">
-                      <Text>{vocab.description || 'No description'}</Text>
-                      <Text type="secondary">
-                        Words: {vocab.wordCount || 0} | Mastered: {vocab.masteredCount || 0} |
-                        Progress: {vocab.progress || 0}%
-                      </Text>
-                      <Text type="secondary">
-                        Created: {new Date(vocab.created_at).toLocaleString()}
-                      </Text>
-                    </Space>
-                  }
-                />
-              </List.Item>
+                    style={{ height: '100%', cursor: 'pointer' }}
+                    actions={[
+                      <Button
+                        key="study"
+                        type="link"
+                        icon={<ReadOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/vocabulary/${vocab.id}/study`)
+                        }}
+                        disabled={!vocab.wordCount || vocab.wordCount === 0}
+                      >
+                        开始学习
+                      </Button>,
+                      <Button
+                        key="view"
+                        type="link"
+                        icon={<EyeOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/vocabulary/${vocab.id}/words`)
+                        }}
+                      >
+                        查看单词
+                      </Button>
+                    ]}
+                >
+                  <Card.Meta
+                    title={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span>{vocab.name}</span>
+                        <Badge count={vocab.wordCount || 0} showZero style={{ backgroundColor: '#52c41a' }} />
+                      </div>
+                    }
+                    description={
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text>{vocab.description || '暂无描述'}</Text>
+                        <div>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            单词: {vocab.wordCount || 0} | 已掌握: {vocab.masteredCount || 0}
+                          </Text>
+                        </div>
+                        <div>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            进度: {vocab.progress || 0}%
+                          </Text>
+                        </div>
+                      </Space>
+                    }
+                  />
+                </Card>
+              </Dropdown>
+            </List.Item>
             )}
-            locale={{ emptyText: 'No vocabularies yet. Create one to get started!' }}
+            locale={{ emptyText: '暂无单词本，点击右上角"创建单词本"开始！' }}
           />
-        </Card>
-
-        <Card title="System Information">
-          <Space direction="vertical">
-            <Text>App Name: Vocabulary Learning System</Text>
-            <Text>Framework: Electron + React + Vite (electron-vite)</Text>
-            <Text>Database: SQL.js</Text>
-            <Text>UI: Ant Design</Text>
-            <Text>Total Vocabularies: {vocabularies.length}</Text>
-          </Space>
-        </Card>
-      </Space>
+        </Space>
+      </Content>
 
       <Modal
-        title="Create Vocabulary"
+        title="创建单词本"
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false)
@@ -150,25 +234,25 @@ function VocabularyList(): JSX.Element {
       >
         <Form form={form} onFinish={handleCreate} layout="vertical">
           <Form.Item
-            label="Name"
+            label="名称"
             name="name"
-            rules={[{ required: true, message: 'Please input vocabulary name!' }]}
+            rules={[{ required: true, message: '请输入单词本名称！' }]}
           >
-            <Input placeholder="e.g., CET-4, IELTS, etc." />
+            <Input placeholder="例如：CET-4、雅思、托福等" />
           </Form.Item>
 
-          <Form.Item label="Description" name="description">
-            <Input.TextArea placeholder="Optional description" rows={3} />
+          <Form.Item label="描述" name="description">
+            <Input.TextArea placeholder="可选的描述信息" rows={3} />
           </Form.Item>
 
-          <Form.Item label="Color" name="color">
-            <Input placeholder="e.g., #1890ff" />
+          <Form.Item label="颜色标识" name="color">
+            <Input placeholder="例如：#1890ff" />
           </Form.Item>
 
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
-                Create
+                创建
               </Button>
               <Button
                 onClick={() => {
@@ -176,13 +260,13 @@ function VocabularyList(): JSX.Element {
                   form.resetFields()
                 }}
               >
-                Cancel
+                取消
               </Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </Layout>
   )
 }
 
